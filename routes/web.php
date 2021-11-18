@@ -28,3 +28,5 @@ Route::get('/home', [
 
 
 Route::resource('lsis', App\Http\Controllers\LsiController::class);
+
+Route::resource('statuses', App\Http\Controllers\StatusController::class);

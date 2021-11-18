@@ -4,7 +4,11 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Lsi;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Flash;
 use Response;
 
@@ -12,15 +16,106 @@ class LsiController extends Controller {
 
     public $successStatus = 200;
 
-    public function testQuery() {
-        $lsis = Lsi::all();
+  
 
-        if (count($lsis) > 0) {
-            return response()->json($lsis, $this->successStatus);
+  public function login(){
+      if (Auth::attempt(['username'=> request('username'), 'password' => request('password')])){
+            $user = Auth::user();
+
+            $success['token'] = Str::random(64);
+            $success['username'] = $user->username;
+            $success['id'] = $user->id;
+            $success['name'] = $user->name;
+
+            // SAVE THE TOKEN
+            $user->remember_token = $success['token'];
+            $user->save();
+
+            return response()->json($success, $this->successStatus);
+        }else{
+            return response()->json(['response' => 'User Not Found'], 404);
+        }
+  
+    }
+
+  
+
+
+  
+  
+  public function register(Request $request) {
+    $validator = Validator::make($request->all(), [
+        'name' => 'required',
+        'username' => 'required',
+        'email' => 'required|email',
+        'password' => 'required',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['response' => $validator->errors()], 401);
+    } else {
+        $input = $request->all();
+
+        if (User::where('email', $input['email'])->exists()) {
+            return response()->json(['response' => 'Email already exists'], 401);
+        } elseif(User::where('username', $input['username'])->exists()) {
+            return response()->json(['response' => 'Username already exists'], 401);
         } else {
-            return response()->json(['Error' => 'There is no LSI in the database'], 404);
-        }        
+            $input['password'] = bcrypt($input['password']);
+            $user = User::create($input);
+
+            $success['token'] = Str::random(64);
+            $success['username'] = $user->username;
+            $success['id'] = $user->id;
+            $success['name'] = $user->name;
+
+            return response()->json($success, $this->successStatus);
+        }
+    }
+
+  }
+
+
+
+  
+public function signregister(Request $request) {
+    $validator = Validator::make($request->all(), [
+        'Firstname' => 'required',
+        'Middlename' => 'required',
+        'Lastname' => 'required',
+        'Birthdate' => 'required',
+        'Gender' => 'required',
+       'Address' => 'required',
+        'Citizenship' => 'required',
+    ]);
+
+   
+
+if ($validator->fails()) {
+    return response()->json(['response' => $validator->errors()], 401);
+
+} else {
+    $input = $request->all();
+
+if(Lsi::where('Firstname', $input['Firstname'])->exists()) {
+    return response()->json(['response' => 'Firstname is Invalid'], 401);
+}else{
+        $table_lsi = Lsi::create($input);
+
+        $success['Firstname'] = $table_lsi->Firstname;
+        $success['Middlename'] = $table_lsi->Middlename;
+        $success['Lastname'] = $table_lsi->Lastname;
+        $success['Birthdate'] = $table_lsi->Birthdate;
+        $success['arrival_date'] = $table_lsi->arrival_date;
+        $success['Address'] = $table_lsi->Address;
+        $success['Citizenship'] = $table_lsi->Citizenship;
+       
+
+
+        return response()->json($success, $this->successStatus);
     }
 }
 
+}
+}
 ?>
